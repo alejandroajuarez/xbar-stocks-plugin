@@ -12,14 +12,20 @@ require 'uri'
 require 'json'
 
 api_key = ENV['STOCKDATA_API_KEY'] || "EhAz6JC0cgsa1790WocIjxo5C1AA2ugr07YC7TtL"
+unless api_key && !api_key.empty?
+  puts "⚠ API key not set"
+  puts "---"
+  puts "Set the STOCKDATA_API_KEY environment variable."
+  exit
+end
 
-tickers = "NVDA,AVGO,TSLA"
+ticker = "NVDA"
 
 base_url = "https://api.stockdata.org/v1/data/quote"
 uri = URI(base_url)
 params = {
   api_token: api_key,
-  symbols: tickers
+  symbols: ticker
 }
 uri.query = URI.encode_www_form(params)
 
@@ -36,45 +42,52 @@ unless response.is_a?(Net::HTTPSuccess)
 end
 
 data = JSON.parse(response.body)
+# Debug the raw API response
+# puts "DEBUG: Raw API response:"
+# puts data.inspect
+
+# Extract stock quotes
 stock_quotes = data["data"]
 
-unless stock_quotes && !stock_quotes.empty?
+# Check if stock_quotes is valid
+if stock_quotes.nil? || stock_quotes.empty?
   puts "No stock data available"
-  exit
+  exit 1
 end
 
-# Build the menu bar output
+# Construct the menu output
 menu_output = stock_quotes.map do |stock|
-  symbol = stock["symbol"]
-  price  = stock["price"]
-  "#{symbol}: $#{price}"
+  ticker = stock.fetch("ticker", "Unknown")
+  price  = stock.fetch("price", "N/A")
+  "#{ticker}: $#{price}"
 end.join(" | ")
 
+# Print the menu output (top-level xbar menu)
 puts menu_output
 
-# Separator indicating the dropdown section
+# Separator for the dropdown
 puts "---"
 
-# Detailed output for each stock
+# Detailed dropdown for each stock
 stock_quotes.each do |stock|
-  symbol      = stock["symbol"]
-  name        = stock["name"] || ""
-  price       = stock["price"]
-  day_change  = stock["day_change"]
-  change_pct  = stock["day_change_pct"]
+  ticker      = stock.fetch("ticker", "Unknown")
+  name        = stock.fetch("name", "")
+  price       = stock.fetch("price", "N/A")
+  day_change  = stock.fetch("day_change", "N/A")
 
-  # Use an arrow symbol based on price change
-  if day_change.to_f >= 0 
-    arrow      = "▲"
-    line_color = "green"
+  # Arrow and color based on day_change
+  if day_change.to_f >= 0
+    arrow = "▲"
+    color = "green"
   else
-    arrow      = "▼"
-    line_color = "red"
+    arrow = "▼"
+    color = "red"
   end
 
-  # Print the detailed line with xbar color formatting
-  puts "#{symbol} (#{name}): $#{price} #{arrow} #{day_change} (#{change_pct}%) | color=#{line_color}"
+  # Detailed output for each stock
+  puts "#{ticker} (#{name}): $#{price} #{arrow} #{day_change} | color=#{color}"
 end
+
 
 # Provide a refresh option
 puts "---"
