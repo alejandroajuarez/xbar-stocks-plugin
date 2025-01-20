@@ -1,12 +1,11 @@
 #!/usr/bin/env ruby
-
 # <xbar.title>3-Stock Tracker</xbar.title>
 # <xbar.version>v1.0</xbar.version>
 # <xbar.author>Alejandro Juarez</xbar.author>
 # <xbar.author.github>alejandroajuarez</xbar.author.github>
 # <xbar.desc>Track 3 stocks that renew every 15 mins!</xbar.desc>
 # <xbar.dependencies>Ruby</xbar.dependencies>
-# <xbar.abouturl>https://github.com/matryer/xbar</xbar.abouturl>
+# <xbar.abouturl>https://github.com/alejandroajuarez/xbar-stocks-plugin</xbar.abouturl>
 
 require 'net/http'
 require 'uri'
@@ -23,7 +22,6 @@ params = {
   symbols: tickers
 }
 uri.query = URI.encode_www_form(params)
-puts "DEBUG: API key is: #{api_key}" if api_key.nil? || api_key.empty?
 
 begin
   response = Net::HTTP.get_response(uri)
@@ -81,5 +79,3 @@ end
 # Provide a refresh option
 puts "---"
 puts "Refresh | refresh=true"
-
-puts "DEBUG: API key is: #{api_key}" if api_key.nil? || api_key.empty?
