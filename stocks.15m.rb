@@ -6,18 +6,19 @@
 # <xbar.desc>Track 3 stocks that renew every 15 mins!</xbar.desc>
 # <xbar.dependencies>Ruby</xbar.dependencies>
 # <xbar.abouturl>https://github.com/alejandroajuarez/xbar-stocks-plugin</xbar.abouturl>
-#!/usr/bin/env ruby
 
 require 'net/http'
 require 'uri'
 require 'json'
-require 'dotenv'
+# require 'dotenv'
+# Dotenv.load(File.expand_path("~/.env"))
 
-api_key = ENV['STOCKDATA_API_KEY']
+# Retrieve API key from the environment
+api_key = 'EhAz6JC0cgsa1790WocIjxo5C1AA2ugr07YC7TtL'
 unless api_key && !api_key.empty?
   puts "⚠ API key not set"
   puts "---"
-  puts "Set the STOCKDATA_API_KEY environment variable."
+  puts "Set the STOCKDATA_API_KEY environment variable in the .env file."
   exit
 end
 
@@ -44,9 +45,6 @@ unless response.is_a?(Net::HTTPSuccess)
 end
 
 data = JSON.parse(response.body)
-# Debug the raw API response
-# puts "DEBUG: Raw API response:"
-# puts data.inspect
 
 # Extract stock quotes
 stock_quotes = data["data"]
@@ -89,7 +87,6 @@ stock_quotes.each do |stock|
   # Detailed output for each stock
   puts "#{ticker} (#{name}): $#{price} #{arrow} #{day_change} | color=#{color}"
 end
-
 
 # Provide a refresh option
 puts "---"
