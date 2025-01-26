@@ -6,12 +6,14 @@
 # <xbar.desc>Track 3 stocks that renew every 15 mins!</xbar.desc>
 # <xbar.dependencies>Ruby</xbar.dependencies>
 # <xbar.abouturl>https://github.com/alejandroajuarez/xbar-stocks-plugin</xbar.abouturl>
+#!/usr/bin/env ruby
 
 require 'net/http'
 require 'uri'
 require 'json'
+require 'dotenv'
 
-api_key = ENV['STOCKDATA_API_KEY'] || "EhAz6JC0cgsa1790WocIjxo5C1AA2ugr07YC7TtL"
+api_key = ENV['STOCKDATA_API_KEY']
 unless api_key && !api_key.empty?
   puts "⚠ API key not set"
   puts "---"
