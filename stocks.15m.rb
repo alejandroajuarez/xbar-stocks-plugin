@@ -1,93 +1,88 @@
-#!/usr/bin/env ruby
-# <xbar.title>3-Stock Tracker</xbar.title>
-# <xbar.version>v1.0</xbar.version>
-# <xbar.author>Alejandro Juarez</xbar.author>
-# <xbar.author.github>alejandroajuarez</xbar.author.github>
-# <xbar.desc>Track 3 stocks that renew every 15 mins!</xbar.desc>
-# <xbar.dependencies>Ruby</xbar.dependencies>
-# <xbar.abouturl>https://github.com/alejandroajuarez/xbar-stocks-plugin</xbar.abouturl>
+#!/usr/bin/env /Users/alejandro/.rbenv/shims/ruby
 
 require 'net/http'
 require 'uri'
 require 'json'
-# require 'dotenv'
-# Dotenv.load(File.expand_path("~/.env"))
 
-# Retrieve API key from the environment
-api_key = 'EhAz6JC0cgsa1790WocIjxo5C1AA2ugr07YC7TtL'
-unless api_key && !api_key.empty?
-  puts "⚠ API key not set"
-  puts "---"
-  puts "Set the STOCKDATA_API_KEY environment variable in the .env file."
-  exit
-end
+# Fetch the API key from the environment variable
+api_key = ENV['STOCKDATA_API_KEY']
 
-ticker = "NVDA"
-
-base_url = "https://api.stockdata.org/v1/data/quote"
-uri = URI(base_url)
-params = {
-  api_token: api_key,
-  symbols: ticker
-}
-uri.query = URI.encode_www_form(params)
-
-begin
-  response = Net::HTTP.get_response(uri)
-rescue StandardError => e
-  puts "API Error: #{e.message}"
-  exit
-end
-
-unless response.is_a?(Net::HTTPSuccess)
-  puts "API Request failed (HTTP #{response.code})"
-  exit
-end
-
-data = JSON.parse(response.body)
-
-# Extract stock quotes
-stock_quotes = data["data"]
-
-# Check if stock_quotes is valid
-if stock_quotes.nil? || stock_quotes.empty?
-  puts "No stock data available"
+# Validate the API key
+if api_key.nil? || api_key.empty?
+  puts "⚠️  API key is not set. Please set the STOCKDATA_API_KEY environment variable."
   exit 1
 end
 
-# Construct the menu output
-menu_output = stock_quotes.map do |stock|
-  ticker = stock.fetch("ticker", "Unknown")
-  price  = stock.fetch("price", "N/A")
-  "#{ticker}: $#{price}"
-end.join(" | ")
+# Method to fetch stock data
+def fetch_stock_data(api_key, ticker)
+  base_url = "https://api.stockdata.org/v1/data/quote"
+  uri = URI(base_url)
+  params = {
+    api_token: api_key,
+    symbols: ticker # Single ticker
+  }
+  uri.query = URI.encode_www_form(params)
 
-# Print the menu output (top-level xbar menu)
-puts menu_output
-
-# Separator for the dropdown
-puts "---"
-
-# Detailed dropdown for each stock
-stock_quotes.each do |stock|
-  ticker      = stock.fetch("ticker", "Unknown")
-  name        = stock.fetch("name", "")
-  price       = stock.fetch("price", "N/A")
-  day_change  = stock.fetch("day_change", "N/A")
-
-  # Arrow and color based on day_change
-  if day_change.to_f >= 0
-    arrow = "▲"
-    color = "green"
-  else
-    arrow = "▼"
-    color = "red"
+  begin
+    response = Net::HTTP.get_response(uri)
+  rescue StandardError => e
+    puts "API Error: #{e.message}"
+    return nil
   end
 
-  # Detailed output for each stock
-  puts "#{ticker} (#{name}): $#{price} #{arrow} #{day_change} | color=#{color}"
+  unless response.is_a?(Net::HTTPSuccess)
+    puts "API Request failed (HTTP #{response.code})"
+    return nil
+  end
+
+  JSON.parse(response.body)["data"]
 end
 
-# Provide a refresh option
-puts "---"
-puts "Refresh | refresh=true"
+# Method to display stock data
+def display_stock_data(stock_data, ticker)
+  if stock_data.nil? || stock_data.empty?
+    puts "No data available for ticker: #{ticker}"
+    return
+  end
+
+  stock = stock_data.first
+  ticker       = stock.fetch("ticker", "Unknown")
+  name         = stock.fetch("name", "")
+  price        = stock.fetch("price", "N/A")
+  day_high     = stock.fetch("day_high", "N/A")
+  day_low      = stock.fetch("day_low", "N/A")
+  week_52_high = stock.fetch("52_week_high", "N/A")
+  week_52_low  = stock.fetch("52_week_low", "N/A")
+  volume       = stock.fetch("volume", "N/A")
+  day_change   = stock.fetch("day_change", "N/A")
+
+  arrow = day_change.to_f >= 0 ? "▲" : "▼"
+  color = day_change.to_f >= 0 ? "\e[32m" : "\e[31m" # Green for positive, red for negative
+
+  puts "\nStock Information for #{ticker} (#{name}):"
+  puts "=" * 40
+  puts "  Price: $#{price} #{color}#{arrow} #{day_change}%\e[0m"
+  puts "  Day High: $#{day_high}"
+  puts "  Day Low: $#{day_low}"
+  puts "  52-Week High: $#{week_52_high}"
+  puts "  52-Week Low: $#{week_52_low}"
+  puts "  Volume: #{volume}"
+  puts "=" * 40
+end
+
+# Main app loop
+loop do
+  # Prompt user for a stock ticker
+  puts "\nEnter a stock ticker (e.g., AAPL, TSLA, NVDA) or 'q' to quit:"
+  input = gets.chomp.strip.upcase
+
+  break if input == 'Q'
+
+  # Fetch and display data for the entered ticker
+  stock_data = fetch_stock_data(api_key, input)
+  puts "DEBUG: Raw API response:"
+  puts stock_data.inspect # Debugging line to inspect the response
+  display_stock_data(stock_data, input)
+end
+
+puts "Goodbye! 👋"
